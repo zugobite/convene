@@ -11,17 +11,18 @@ import java.util.Map;
 /**
  * Service class managing all event operations in the Campus Event Management System.
  * Acts as the central repository for events and provides business logic for
- * creating, updating, cancelling, listing, and sorting events.
+ * creating, updating, cancelling, listing, sorting, and registration management.
  *
  * <p>Demonstrates:</p>
  * <ul>
  *   <li><b>Collections</b> — {@code HashMap} for O(1) event lookup by ID</li>
+ *   <li><b>Multithreading</b> — background thread for automated waitlist promotion</li>
  *   <li><b>Modular design</b> — reusable methods for all event operations</li>
  *   <li><b>Encapsulation</b> — events stored privately, accessed through methods</li>
  * </ul>
  *
  * @author Zascia Hugo
- * @version 0.2.0
+ * @version 0.3.0
  * @see Event
  */
 public class EventManager {
@@ -170,5 +171,112 @@ public class EventManager {
      */
     public int getActiveEventCount() {
         return (int) events.values().stream().filter(e -> !e.isCancelled()).count();
+    }
+
+    // ---- Registration Operations (Section 2.3) ----
+
+    /**
+     * Registers a student for an event. If the event has space, the student
+     * is added to the registered participants list. If the event is full,
+     * the student is automatically added to the waitlist queue.
+     *
+     * @param eventId  the event ID to register for
+     * @param userId   the student's user ID
+     * @return a status string: "REGISTERED", "WAITLISTED", "DUPLICATE",
+     *         "CANCELLED", or "NOT_FOUND"
+     */
+    public String registerStudent(int eventId, String userId) {
+        Event event = events.get(eventId);
+        if (event == null) {
+            return "NOT_FOUND";
+        }
+        if (event.isCancelled()) {
+            return "CANCELLED";
+        }
+        if (event.isRegistered(userId) || event.isWaitlisted(userId)) {
+            return "DUPLICATE";
+        }
+        if (event.hasSpace()) {
+            event.addParticipant(userId);
+            return "REGISTERED";
+        } else {
+            event.addToWaitlist(userId);
+            return "WAITLISTED";
+        }
+    }
+
+    /**
+     * Cancels a student's registration or waitlist entry for an event.
+     * If the student was registered and the waitlist is non-empty,
+     * the first waitlisted student is promoted automatically in a
+     * <b>separate background thread</b>.
+     *
+     * @param eventId  the event ID to cancel from
+     * @param userId   the student's user ID
+     * @return a status string: "CANCELLED_REG", "CANCELLED_WAIT",
+     *         "NOT_REGISTERED", "EVENT_CANCELLED", or "NOT_FOUND"
+     */
+    public String cancelRegistration(int eventId, String userId) {
+        Event event = events.get(eventId);
+        if (event == null) {
+            return "NOT_FOUND";
+        }
+        if (event.isCancelled()) {
+            return "EVENT_CANCELLED";
+        }
+
+        // Case 1: Student is on the registered list
+        if (event.isRegistered(userId)) {
+            event.removeParticipant(userId);
+
+            // Automated waitlist promotion in a separate thread
+            if (event.getWaitlistCount() > 0) {
+                Thread promotionThread = new Thread(() -> {
+                    String promoted = event.pollWaitlist();
+                    if (promoted != null) {
+                        event.addParticipant(promoted);
+                        System.out.println();
+                        System.out.println("Registration cancelled. Student " + promoted
+                                + " has been promoted from the waitlist to the event.");
+                    }
+                }, "WaitlistPromotion-Event-" + eventId);
+                promotionThread.start();
+
+                // Wait for the promotion thread to finish so output appears
+                // before the next menu prompt
+                try {
+                    promotionThread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            return "CANCELLED_REG";
+        }
+
+        // Case 2: Student is on the waitlist
+        if (event.isWaitlisted(userId)) {
+            event.removeFromWaitlist(userId);
+            return "CANCELLED_WAIT";
+        }
+
+        return "NOT_REGISTERED";
+    }
+
+    /**
+     * Returns a list of all events (active and cancelled) that a student
+     * is registered for or waitlisted on.
+     *
+     * @param userId the student's user ID
+     * @return list of events the student is involved in
+     */
+    public List<Event> getEventsForStudent(String userId) {
+        List<Event> result = new ArrayList<>();
+        for (Event event : events.values()) {
+            if (event.isRegistered(userId) || event.isWaitlisted(userId)) {
+                result.add(event);
+            }
+        }
+        return result;
     }
 }

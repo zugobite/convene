@@ -25,7 +25,7 @@ import java.util.Scanner;
  * </ol>
  *
  * @author Zascia Hugo
- * @version 0.2.0
+ * @version 0.3.0
  * @see Student
  * @see EventManager
  */
@@ -71,9 +71,9 @@ public class StudentMenuController {
 
             switch (choice) {
                 case 1 -> viewEvents(scanner);
-                case 2 -> registerForEvent();
-                case 3 -> cancelRegistration();
-                case 4 -> viewRegistrationStatus();
+                case 2 -> registerForEvent(scanner);
+                case 3 -> cancelRegistration(scanner);
+                case 4 -> viewRegistrationStatus(scanner);
                 case 5 -> searchEvents();
                 case 6 -> running = false;
                 default -> ConsoleUtils.printError("Invalid choice.");
@@ -139,42 +139,185 @@ public class StudentMenuController {
         ConsoleUtils.printInfo("Showing " + events.size() + " active event(s).");
     }
 
-    // ---- Section 2.3 Stubs ----
+    // ---- Section 2.3 — Registration, Waitlists, and Automation ----
 
     /**
      * Registers the student for an event by Event ID.
-     * Stub — will be implemented in Section 2.3.
+     * If the event has space, the student is registered automatically.
+     * If the event is full, the student is waitlisted automatically.
+     * Handles duplicate registration and cancelled event cases.
+     *
+     * @param scanner the Scanner instance for reading input
      */
-    private void registerForEvent() {
+    private void registerForEvent(Scanner scanner) {
         if (!student.hasPermission("REGISTER")) {
             ConsoleUtils.printError("Access denied: Students cannot perform this action.");
             return;
         }
-        ConsoleUtils.printInfo("Register for Event — Coming soon (Section 2.3).");
+
+        ConsoleUtils.printHeader("Register for Event");
+
+        if (eventManager.getActiveEventCount() == 0) {
+            ConsoleUtils.printInfo("No events are currently available for registration.");
+            return;
+        }
+
+        // Show active events for reference
+        List<Event> activeEvents = eventManager.getActiveEvents();
+        ConsoleUtils.printDivider();
+        for (Event event : activeEvents) {
+            String status = event.hasSpace() ? "OPEN" : "FULL (waitlist)";
+            System.out.println("  " + event + "  [" + status + "]");
+        }
+        ConsoleUtils.printDivider();
+        System.out.println();
+
+        // Prompt for event ID
+        System.out.print("Enter Event ID to register for: ");
+        String idInput = scanner.nextLine().trim();
+
+        if (!InputValidator.isPositiveInteger(idInput)) {
+            ConsoleUtils.printError("Invalid Event ID.");
+            return;
+        }
+
+        int eventId = Integer.parseInt(idInput);
+        String result = eventManager.registerStudent(eventId, student.getUserId());
+
+        switch (result) {
+            case "REGISTERED" -> {
+                Event event = eventManager.getEvent(eventId);
+                ConsoleUtils.printSuccess("You have been registered for \"" + event.getEventName()
+                        + "\" (" + event.getRegisteredCount() + "/" + event.getMaxParticipants() + ").");
+            }
+            case "WAITLISTED" -> {
+                Event event = eventManager.getEvent(eventId);
+                ConsoleUtils.printInfo("Event is full. You have been added to the waitlist for \""
+                        + event.getEventName() + "\" (position " + event.getWaitlistCount() + ").");
+            }
+            case "DUPLICATE" ->
+                ConsoleUtils.printError("You are already registered or waitlisted for this event.");
+            case "CANCELLED" ->
+                ConsoleUtils.printError("This event has been cancelled and is not accepting registrations.");
+            case "NOT_FOUND" ->
+                ConsoleUtils.printError("Event with ID " + eventId + " not found.");
+            default ->
+                ConsoleUtils.printError("An unexpected error occurred.");
+        }
     }
 
     /**
-     * Cancels the student's registration or waitlist entry.
-     * Stub — will be implemented in Section 2.3.
+     * Cancels the student's registration or waitlist entry for an event.
+     * If the student was registered and the waitlist is non-empty, the first
+     * waitlisted student is promoted automatically in a background thread.
+     *
+     * @param scanner the Scanner instance for reading input
      */
-    private void cancelRegistration() {
+    private void cancelRegistration(Scanner scanner) {
         if (!student.hasPermission("CANCEL_REGISTRATION")) {
             ConsoleUtils.printError("Access denied: Students cannot perform this action.");
             return;
         }
-        ConsoleUtils.printInfo("Cancel Registration — Coming soon (Section 2.3).");
+
+        ConsoleUtils.printHeader("Cancel Registration");
+
+        // Show events the student is involved in
+        List<Event> myEvents = eventManager.getEventsForStudent(student.getUserId());
+
+        if (myEvents.isEmpty()) {
+            ConsoleUtils.printInfo("You are not registered or waitlisted for any events.");
+            return;
+        }
+
+        ConsoleUtils.printDivider();
+        System.out.println("  Your Events:");
+        ConsoleUtils.printDivider();
+        for (Event event : myEvents) {
+            String myStatus = event.isRegistered(student.getUserId()) ? "REGISTERED" : "WAITLISTED";
+            System.out.println("  [" + event.getEventId() + "] " + event.getEventName()
+                    + " — " + event.getEventDate() + " " + event.getEventTime()
+                    + " [" + myStatus + "]");
+        }
+        ConsoleUtils.printDivider();
+        System.out.println();
+
+        // Prompt for event ID
+        System.out.print("Enter Event ID to cancel registration: ");
+        String idInput = scanner.nextLine().trim();
+
+        if (!InputValidator.isPositiveInteger(idInput)) {
+            ConsoleUtils.printError("Invalid Event ID.");
+            return;
+        }
+
+        int eventId = Integer.parseInt(idInput);
+        String result = eventManager.cancelRegistration(eventId, student.getUserId());
+
+        switch (result) {
+            case "CANCELLED_REG" ->
+                ConsoleUtils.printSuccess("Your registration for event " + eventId + " has been cancelled.");
+            case "CANCELLED_WAIT" ->
+                ConsoleUtils.printSuccess("Your waitlist entry for event " + eventId + " has been removed.");
+            case "NOT_REGISTERED" ->
+                ConsoleUtils.printError("You are not registered or waitlisted for event " + eventId + ".");
+            case "EVENT_CANCELLED" ->
+                ConsoleUtils.printError("This event has already been cancelled.");
+            case "NOT_FOUND" ->
+                ConsoleUtils.printError("Event with ID " + eventId + " not found.");
+            default ->
+                ConsoleUtils.printError("An unexpected error occurred.");
+        }
     }
 
     /**
-     * Displays the student's current registration status.
-     * Stub — will be implemented in Section 2.3.
+     * Displays the student's current registration status across all events.
+     * Shows whether the student is registered or waitlisted for each event.
+     *
+     * @param scanner the Scanner instance for reading input (reserved for future use)
      */
-    private void viewRegistrationStatus() {
+    private void viewRegistrationStatus(Scanner scanner) {
         if (!student.hasPermission("VIEW_STATUS")) {
             ConsoleUtils.printError("Access denied: Students cannot perform this action.");
             return;
         }
-        ConsoleUtils.printInfo("View Registration Status — Coming soon (Section 2.3).");
+
+        ConsoleUtils.printHeader("Registration Status");
+
+        List<Event> myEvents = eventManager.getEventsForStudent(student.getUserId());
+
+        if (myEvents.isEmpty()) {
+            ConsoleUtils.printInfo("You are not registered or waitlisted for any events.");
+            return;
+        }
+
+        ConsoleUtils.printDivider();
+        System.out.println("  Student: " + student.getName() + " (" + student.getUserId() + ")");
+        ConsoleUtils.printDivider();
+
+        int registeredCount = 0;
+        int waitlistedCount = 0;
+
+        for (Event event : myEvents) {
+            String myStatus;
+            if (event.isRegistered(student.getUserId())) {
+                myStatus = "REGISTERED";
+                registeredCount++;
+            } else {
+                myStatus = "WAITLISTED (position "
+                        + (event.getWaitlist().indexOf(student.getUserId()) + 1) + ")";
+                waitlistedCount++;
+            }
+
+            String eventStatus = event.isCancelled() ? " [EVENT CANCELLED]" : "";
+            System.out.println();
+            System.out.println("  Event    : [" + event.getEventId() + "] " + event.getEventName() + eventStatus);
+            System.out.println("  Date     : " + event.getEventDate() + " " + event.getEventTime());
+            System.out.println("  Location : " + event.getLocation());
+            System.out.println("  Status   : " + myStatus);
+        }
+
+        ConsoleUtils.printDivider();
+        ConsoleUtils.printInfo("Total: " + registeredCount + " registered, " + waitlistedCount + " waitlisted.");
     }
 
     // ---- Section 2.4 Stub ----

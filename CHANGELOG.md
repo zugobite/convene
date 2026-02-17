@@ -23,6 +23,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2026-02-17
+
+### Added
+
+#### Student Registration, Waitlists, and Automation (Section 2.3)
+
+- Student: Register for events by Event ID (auto-register if space, auto-waitlist if full)
+- Student: Cancel registration or waitlist entry for any event
+- Student: View registration status across all events (registered/waitlisted with position)
+- Automated waitlist promotion in a **separate background thread** when a registered student cancels
+- Promotion thread outputs confirmation message matching spec format
+- `EventManager.registerStudent()` with status returns: REGISTERED, WAITLISTED, DUPLICATE, CANCELLED, NOT_FOUND
+- `EventManager.cancelRegistration()` with threaded promotion and status returns
+- `EventManager.getEventsForStudent()` for cross-event student lookup
+- Duplicate registration detection and graceful error handling
+
+### Changed
+
+- `StudentMenuController` stubs replaced with full registration, cancellation, and status implementations
+- `EventManager` version bumped to 0.3.0 with registration and threading logic
+- `StudentMenuController` version bumped to 0.3.0
+
+---
+
 ## [0.2.0] - 2026-02-17
 
 ### Added
@@ -102,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/zugobite/convene/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/zugobite/convene/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/zugobite/convene/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/zugobite/convene/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/zugobite/convene/releases/tag/v0.1.0

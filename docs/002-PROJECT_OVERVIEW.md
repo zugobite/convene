@@ -22,9 +22,9 @@ Main.java (Entry Point)
             │
             ├── StudentMenuController(student, eventManager)
             │       ├── View Events           # List active events (sorted)
-            │       ├── Register for Event    # (Section 2.3)
-            │       ├── Cancel Registration   # (Section 2.3)
-            │       ├── View Reg. Status      # (Section 2.3)
+            │       ├── Register for Event    # Auto-register or auto-waitlist
+            │       ├── Cancel Registration   # With threaded waitlist promotion
+            │       ├── View Reg. Status      # Registered/Waitlisted per event
             │       └── Search Events         # (Section 2.4)
             │
             └── StaffMenuController(staff, eventManager)
@@ -58,7 +58,7 @@ com.zugobite.convene
 │   └── StaffMenuController.java              # Staff menu handler
 │
 ├── services/
-│   └── EventManager.java                     # Event CRUD, listing, and sorting
+│   └── EventManager.java                     # Event CRUD, registration, and threading
 │
 ├── utils/
 │   ├── InputValidator.java                   # Input validation utilities
@@ -101,6 +101,8 @@ Event
 EventManager
 ├── events: Map<Integer, Event>
 ├── createEvent(), getEvent(), cancelEvent()
+├── registerStudent(), cancelRegistration()       # with threaded promotion
+├── getEventsForStudent()                          # cross-event lookup
 ├── getActiveEvents(), getAllEvents()
 ├── getEventsSortedByName(), getEventsSortedByDate()
 └── getTotalEventCount(), getActiveEventCount()
@@ -118,6 +120,7 @@ EventManager
 | **Encapsulation** | Private fields with public getters in all model classes                |
 | **Enums**         | `Role` enum with display name field and `toString()` override          |
 | **Collections**   | `ArrayList` (participants), `LinkedList`/`Queue` (waitlist), `HashMap` (event store) |
+| **Multithreading** | Background `Thread` for automated waitlist promotion on cancellation              |
 
 ---
 
