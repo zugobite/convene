@@ -11,6 +11,8 @@ Main.java (Entry Point)
     │
     ├── ConsoleUtils.printHeader()            # Display welcome banner
     │
+    ├── EventManager()                        # Initialise shared event store
+    │
     ├── MenuController.selectRole()           # Prompt user for role selection
     │       │
     │       ├── Creates Student object        # If role = STUDENT
@@ -18,19 +20,19 @@ Main.java (Entry Point)
     │
     └── Role-based Menu Controller
             │
-            ├── StudentMenuController         # Student menu loop
-            │       ├── View Events
-            │       ├── Register for Event
-            │       ├── Cancel Registration
-            │       ├── View Registration Status
-            │       └── Search Events
+            ├── StudentMenuController(student, eventManager)
+            │       ├── View Events           # List active events (sorted)
+            │       ├── Register for Event    # (Section 2.3)
+            │       ├── Cancel Registration   # (Section 2.3)
+            │       ├── View Reg. Status      # (Section 2.3)
+            │       └── Search Events         # (Section 2.4)
             │
-            └── StaffMenuController           # Staff menu loop
-                    ├── Create Event
-                    ├── Update Event
-                    ├── Cancel Event
-                    ├── View Participants & Waitlists
-                    └── Search Events
+            └── StaffMenuController(staff, eventManager)
+                    ├── Create Event          # Full CRUD with validation
+                    ├── Update Event          # Name / time / location
+                    ├── Cancel Event          # Soft-delete with confirmation
+                    ├── View Participants     # Registered + waitlist per event
+                    └── Search Events         # (Section 2.4)
 ```
 
 ---
@@ -47,14 +49,16 @@ com.zugobite.convene
 ├── models/
 │   ├── User.java                             # Abstract base class (OOP: abstraction)
 │   ├── Student.java                          # Student user (OOP: inheritance)
-│   └── Staff.java                            # Staff user (OOP: inheritance)
+│   ├── Staff.java                            # Staff user (OOP: inheritance)
+│   └── Event.java                            # Event domain model (OOP: encapsulation)
 │
 ├── controllers/
 │   ├── MenuController.java                   # Role selection and routing
 │   ├── StudentMenuController.java            # Student menu handler
 │   └── StaffMenuController.java              # Staff menu handler
 │
-├── services/                                 # Business logic (future sections)
+├── services/
+│   └── EventManager.java                     # Event CRUD, listing, and sorting
 │
 ├── utils/
 │   ├── InputValidator.java                   # Input validation utilities
@@ -82,19 +86,38 @@ User (abstract)
 └── Staff
     ├── showMenu() → Staff-specific menu
     └── hasPermission() → CREATE_EVENT, UPDATE_EVENT, CANCEL_EVENT, VIEW_PARTICIPANTS
+
+Event
+├── eventId: int (final)
+├── eventName, eventDate, eventTime, location: String
+├── maxParticipants: int (final)
+├── registeredParticipants: List<String>
+├── waitlist: Queue<String>
+├── cancelled: boolean
+├── addParticipant(), removeParticipant(), addToWaitlist(), removeFromWaitlist()
+├── hasSpace(), isRegistered(), isWaitlisted(), pollWaitlist()
+└── toDetailedString(), toString()
+
+EventManager
+├── events: Map<Integer, Event>
+├── createEvent(), getEvent(), cancelEvent()
+├── getActiveEvents(), getAllEvents()
+├── getEventsSortedByName(), getEventsSortedByDate()
+└── getTotalEventCount(), getActiveEventCount()
 ```
 
 ---
 
 ## OOP Principles Demonstrated
 
-| Principle         | Implementation                                                |
-| ----------------- | ------------------------------------------------------------- |
-| **Abstraction**   | `User` is abstract with `showMenu()` and `hasPermission()`    |
-| **Inheritance**   | `Student` and `Staff` extend `User`                           |
-| **Polymorphism**  | `Main` uses `User` reference; menu dispatch is polymorphic    |
-| **Encapsulation** | Private fields with public getters in all model classes       |
-| **Enums**         | `Role` enum with display name field and `toString()` override |
+| Principle         | Implementation                                                         |
+| ----------------- | ---------------------------------------------------------------------- |
+| **Abstraction**   | `User` is abstract with `showMenu()` and `hasPermission()`             |
+| **Inheritance**   | `Student` and `Staff` extend `User`                                    |
+| **Polymorphism**  | `Main` uses `User` reference; menu dispatch is polymorphic             |
+| **Encapsulation** | Private fields with public getters in all model classes                |
+| **Enums**         | `Role` enum with display name field and `toString()` override          |
+| **Collections**   | `ArrayList` (participants), `LinkedList`/`Queue` (waitlist), `HashMap` (event store) |
 
 ---
 

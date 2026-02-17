@@ -23,6 +23,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-02-17
+
+### Added
+
+#### Event Management & State Control (Section 2.2)
+
+- `Event` model class with unique ID, name, date, time, location, max participants, registered list, and waitlist queue
+- `EventManager` service class with HashMap-based event store and O(1) lookup by ID
+- Staff: Create events with validated fields (ID, name, date, time, location, capacity)
+- Staff: Update event name, time, or location via interactive sub-menu
+- Staff: Cancel events with confirmation prompt (soft-delete preserving history)
+- Staff: View participants and waitlists with sort options (by name, date, or default order)
+- Student: View all active events with sort options (by name, date, or default order)
+- Event sorting by name (case-insensitive alphabetical) and date (chronological dd/mm/yyyy parsing)
+
+#### Validation Enhancements
+
+- `InputValidator.isValidDate()` for dd/mm/yyyy format with leap year handling
+- `InputValidator.isValidTime()` for HH:mm 24-hour format validation
+- `InputValidator.isPositiveInteger()` for capacity and ID validation
+- Full input validation loops in event creation (re-prompts on invalid input)
+
+### Changed
+
+- `StaffMenuController` now accepts `EventManager` and implements real CRUD actions (replaces stubs)
+- `StudentMenuController` now accepts `EventManager` and implements real event viewing (replaces stub)
+- `Main.java` initialises shared `EventManager` and passes it to both controllers
+- `InputValidator` version bumped to 0.2.0
+
+---
+
 ## [0.1.0] - 2026-02-17
 
 ### Added
@@ -71,5 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/zugobite/convene/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/zugobite/convene/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/zugobite/convene/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/zugobite/convene/releases/tag/v0.1.0

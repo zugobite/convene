@@ -7,6 +7,7 @@ import com.zugobite.convene.enums.Role;
 import com.zugobite.convene.models.Staff;
 import com.zugobite.convene.models.Student;
 import com.zugobite.convene.models.User;
+import com.zugobite.convene.services.EventManager;
 import com.zugobite.convene.utils.ConsoleUtils;
 
 import java.util.Scanner;
@@ -17,6 +18,7 @@ import java.util.Scanner;
  * <p>Application flow:</p>
  * <ol>
  *   <li>Display welcome banner</li>
+ *   <li>Initialise the shared {@link EventManager}</li>
  *   <li>Prompt user to select a role (Student or Staff)</li>
  *   <li>Collect user credentials (ID and name)</li>
  *   <li>Route to the appropriate role-specific menu controller</li>
@@ -24,13 +26,13 @@ import java.util.Scanner;
  * </ol>
  *
  * @author Zascia Hugo
- * @version 0.1.0
+ * @version 0.2.0
  */
 public class Main {
 
     /**
-     * Application entry point. Sets up the console, performs role selection,
-     * and delegates to the appropriate menu controller.
+     * Application entry point. Sets up the console, initialises services,
+     * performs role selection, and delegates to the appropriate menu controller.
      *
      * @param args command-line arguments (not used)
      */
@@ -41,6 +43,9 @@ public class Main {
             // Display welcome banner
             ConsoleUtils.printHeader("Convene - Campus Event Management System");
 
+            // Initialise shared services
+            EventManager eventManager = new EventManager();
+
             // Role selection and user setup
             User user = MenuController.selectRole(scanner);
 
@@ -50,10 +55,10 @@ public class Main {
 
             // Route to role-specific menu controller
             if (user.getRole() == Role.STUDENT) {
-                StudentMenuController controller = new StudentMenuController((Student) user);
+                StudentMenuController controller = new StudentMenuController((Student) user, eventManager);
                 controller.run(scanner);
             } else {
-                StaffMenuController controller = new StaffMenuController((Staff) user);
+                StaffMenuController controller = new StaffMenuController((Staff) user, eventManager);
                 controller.run(scanner);
             }
 

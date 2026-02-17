@@ -149,12 +149,14 @@ convene/
 │   ├── models/
 │   │   ├── User.java                   # Abstract base class
 │   │   ├── Student.java                # Student user type
-│   │   └── Staff.java                  # Staff user type
+│   │   ├── Staff.java                  # Staff user type
+│   │   └── Event.java                  # Event domain model
 │   ├── controllers/
 │   │   ├── MenuController.java         # Role selection & routing
 │   │   ├── StudentMenuController.java  # Student menu handler
 │   │   └── StaffMenuController.java    # Staff menu handler
-│   ├── services/                       # Business logic layer
+│   ├── services/
+│   │   └── EventManager.java           # Event CRUD & sorting service
 │   ├── utils/
 │   │   ├── InputValidator.java         # Input validation helpers
 │   │   └── ConsoleUtils.java           # Console formatting helpers
@@ -180,10 +182,12 @@ The application uses the following class structure:
 | `Student`               | Concrete   | Student user with view/register/cancel actions      |
 | `Staff`                 | Concrete   | Staff user with create/update/cancel actions        |
 | `Role`                  | Enum       | STUDENT and STAFF role constants                    |
+| `Event`                 | Model      | Event with ID, schedule, capacity, and waitlist     |
+| `EventManager`          | Service    | Event store with CRUD, listing, and sorting logic   |
 | `MenuController`        | Controller | Role selection and routing at startup               |
 | `StudentMenuController` | Controller | Student menu loop and action dispatch               |
 | `StaffMenuController`   | Controller | Staff menu loop and action dispatch                 |
-| `InputValidator`        | Utility    | Input validation for menus, IDs, and text           |
+| `InputValidator`        | Utility    | Validation for dates, times, IDs, and menus         |
 | `ConsoleUtils`          | Utility    | Console formatting, banners, and prompts            |
 | `Main`                  | Entry      | Application entry point                             |
 
