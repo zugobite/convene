@@ -3,6 +3,7 @@ package com.zugobite.convene;
 import com.zugobite.convene.controllers.MenuController;
 import com.zugobite.convene.controllers.StaffMenuController;
 import com.zugobite.convene.controllers.StudentMenuController;
+import com.zugobite.convene.data.DataPersistence;
 import com.zugobite.convene.enums.Role;
 import com.zugobite.convene.models.Staff;
 import com.zugobite.convene.models.Student;
@@ -26,7 +27,7 @@ import java.util.Scanner;
  * </ol>
  *
  * @author Zascia Hugo
- * @version 0.2.0
+ * @version 0.4.0
  */
 public class Main {
 
@@ -45,6 +46,18 @@ public class Main {
 
             // Initialise shared services
             EventManager eventManager = new EventManager();
+            DataPersistence persistence = new DataPersistence();
+
+            // Load saved data from file (if any)
+            if (persistence.loadData(eventManager)) {
+                int count = eventManager.getTotalEventCount();
+                if (count > 0) {
+                    ConsoleUtils.printInfo("Loaded " + count + " saved event(s) from "
+                            + persistence.getFilePath() + ".");
+                }
+            } else {
+                ConsoleUtils.printError("Warning: Could not load saved data. Starting fresh.");
+            }
 
             // Role selection and user setup
             User user = MenuController.selectRole(scanner);
@@ -55,11 +68,18 @@ public class Main {
 
             // Route to role-specific menu controller
             if (user.getRole() == Role.STUDENT) {
-                StudentMenuController controller = new StudentMenuController((Student) user, eventManager);
+                StudentMenuController controller = new StudentMenuController((Student) user, eventManager, persistence);
                 controller.run(scanner);
             } else {
-                StaffMenuController controller = new StaffMenuController((Staff) user, eventManager);
+                StaffMenuController controller = new StaffMenuController((Staff) user, eventManager, persistence);
                 controller.run(scanner);
+            }
+
+            // Save data before exit
+            if (persistence.saveData(eventManager)) {
+                ConsoleUtils.printSuccess("Data saved to " + persistence.getFilePath() + ".");
+            } else {
+                ConsoleUtils.printError("Warning: Could not save data to file.");
             }
 
             // Farewell message

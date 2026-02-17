@@ -13,26 +13,32 @@ Main.java (Entry Point)
     │
     ├── EventManager()                        # Initialise shared event store
     │
+    ├── DataPersistence()                     # Initialise file I/O layer
+    │
+    ├── persistence.loadData(eventManager)    # Load saved events from file
+    │
     ├── MenuController.selectRole()           # Prompt user for role selection
     │       │
     │       ├── Creates Student object        # If role = STUDENT
     │       └── Creates Staff object          # If role = STAFF
     │
-    └── Role-based Menu Controller
+    ├── Role-based Menu Controller
             │
-            ├── StudentMenuController(student, eventManager)
+            ├── StudentMenuController(student, eventManager, persistence)
             │       ├── View Events           # List active events (sorted)
             │       ├── Register for Event    # Auto-register or auto-waitlist
             │       ├── Cancel Registration   # With threaded waitlist promotion
             │       ├── View Reg. Status      # Registered/Waitlisted per event
-            │       └── Search Events         # (Section 2.4)
+            │       └── Search Events         # By name (partial) or date (exact)
             │
-            └── StaffMenuController(staff, eventManager)
+            └── StaffMenuController(staff, eventManager, persistence)
                     ├── Create Event          # Full CRUD with validation
                     ├── Update Event          # Name / time / location
                     ├── Cancel Event          # Soft-delete with confirmation
                     ├── View Participants     # Registered + waitlist per event
-                    └── Search Events         # (Section 2.4)
+                    └── Search Events         # By name (partial) or date (exact)
+
+    └── persistence.saveData(eventManager)    # Save all data to file on exit
 ```
 
 ---
@@ -58,13 +64,14 @@ com.zugobite.convene
 │   └── StaffMenuController.java              # Staff menu handler
 │
 ├── services/
-│   └── EventManager.java                     # Event CRUD, registration, and threading
+│   └── EventManager.java                     # Event CRUD, registration, search & threading
 │
 ├── utils/
 │   ├── InputValidator.java                   # Input validation utilities
 │   └── ConsoleUtils.java                     # Console formatting utilities
 │
-└── data/                                     # File I/O persistence (future sections)
+└── data/
+    └── DataPersistence.java                  # File-based save/load persistence
 ```
 
 ---
@@ -103,9 +110,17 @@ EventManager
 ├── createEvent(), getEvent(), cancelEvent()
 ├── registerStudent(), cancelRegistration()       # with threaded promotion
 ├── getEventsForStudent()                          # cross-event lookup
+├── searchByName(), searchByDate()                 # search with partial/exact match
 ├── getActiveEvents(), getAllEvents()
 ├── getEventsSortedByName(), getEventsSortedByDate()
+├── getEventsMap(), addEvent()                     # persistence helpers
 └── getTotalEventCount(), getActiveEventCount()
+
+DataPersistence
+├── filePath: String
+├── saveData(EventManager): boolean
+├── loadData(EventManager): boolean
+└── getFilePath(): String
 ```
 
 ---
@@ -121,6 +136,7 @@ EventManager
 | **Enums**         | `Role` enum with display name field and `toString()` override          |
 | **Collections**   | `ArrayList` (participants), `LinkedList`/`Queue` (waitlist), `HashMap` (event store) |
 | **Multithreading** | Background `Thread` for automated waitlist promotion on cancellation              |
+| **File I/O**       | `DataPersistence` class for saving/loading events, registrations, and waitlists |
 
 ---
 
@@ -130,7 +146,7 @@ EventManager
 | --------------- | ---------------------------------------------------- |
 | Language        | Java 17+                                             |
 | Build           | Manual `javac` compilation (Maven-compatible layout) |
-| Persistence     | File I/O (`.txt` / `.dat` files)                     |
+| Persistence     | File I/O (`.txt` files via `DataPersistence`)    |
 | Concurrency     | Java threads for waitlist promotion                  |
 | Data Structures | `ArrayList`, `LinkedList` (Queue), `HashMap`         |
 | Architecture    | MVC-inspired (Models, Controllers, Services)         |

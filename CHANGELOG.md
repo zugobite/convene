@@ -23,6 +23,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2026-02-17
+
+### Added
+
+#### Search Functionality (Section 2.4)
+
+- Search events by name (partial or full match, case-insensitive)
+- Search events by date (exact match, dd/mm/yyyy format)
+- Search results display full event details including registered count and waitlist count
+- `EventManager.searchByName()` with case-insensitive partial matching via streams
+- `EventManager.searchByDate()` with exact date matching via streams
+- Search sub-menu in both `StaffMenuController` and `StudentMenuController`
+
+#### Data Persistence (Section 2.4)
+
+- `DataPersistence` class in `data` package for file-based save/load
+- Pipe-delimited `.txt` format with three record types: EVENT, REG, WAIT
+- Auto-save on every modification (create, update, cancel event, register, unregister)
+- Auto-load on application startup with saved event count display
+- Save on application exit for safety
+- Pipe character escaping in event names and locations
+- Graceful handling of missing, empty, or malformed data files
+- `EventManager.getEventsMap()` and `EventManager.addEvent()` persistence helpers
+
+### Changed
+
+- `StaffMenuController` now accepts `DataPersistence` and auto-saves on create/update/cancel
+- `StudentMenuController` now accepts `DataPersistence` and auto-saves on register/cancel
+- `Main.java` initialises `DataPersistence`, loads data on startup, and saves on exit
+- `EventManager` version bumped to 0.4.0 with search and persistence support
+- `StaffMenuController` version bumped to 0.4.0 (search stubs replaced)
+- `StudentMenuController` version bumped to 0.4.0 (search stubs replaced)
+- `Main` version bumped to 0.4.0
+
+---
+
 ## [0.3.0] - 2026-02-17
 
 ### Added

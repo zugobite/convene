@@ -1,5 +1,6 @@
 package com.zugobite.convene.controllers;
 
+import com.zugobite.convene.data.DataPersistence;
 import com.zugobite.convene.models.Event;
 import com.zugobite.convene.models.Student;
 import com.zugobite.convene.services.EventManager;
@@ -25,7 +26,7 @@ import java.util.Scanner;
  * </ol>
  *
  * @author Zascia Hugo
- * @version 0.3.0
+ * @version 0.4.0
  * @see Student
  * @see EventManager
  */
@@ -37,15 +38,20 @@ public class StudentMenuController {
     /** The shared event manager for all event operations. */
     private final EventManager eventManager;
 
+    /** The persistence layer for saving data on modification. */
+    private final DataPersistence persistence;
+
     /**
      * Constructs a StudentMenuController for the given student.
      *
      * @param student      the authenticated student user
      * @param eventManager the shared event manager instance
+     * @param persistence  the data persistence instance for auto-save
      */
-    public StudentMenuController(Student student, EventManager eventManager) {
+    public StudentMenuController(Student student, EventManager eventManager, DataPersistence persistence) {
         this.student = student;
         this.eventManager = eventManager;
+        this.persistence = persistence;
     }
 
     /**
@@ -74,7 +80,7 @@ public class StudentMenuController {
                 case 2 -> registerForEvent(scanner);
                 case 3 -> cancelRegistration(scanner);
                 case 4 -> viewRegistrationStatus(scanner);
-                case 5 -> searchEvents();
+                case 5 -> searchEvents(scanner);
                 case 6 -> running = false;
                 default -> ConsoleUtils.printError("Invalid choice.");
             }
@@ -189,11 +195,13 @@ public class StudentMenuController {
                 Event event = eventManager.getEvent(eventId);
                 ConsoleUtils.printSuccess("You have been registered for \"" + event.getEventName()
                         + "\" (" + event.getRegisteredCount() + "/" + event.getMaxParticipants() + ").");
+                persistence.saveData(eventManager);
             }
             case "WAITLISTED" -> {
                 Event event = eventManager.getEvent(eventId);
                 ConsoleUtils.printInfo("Event is full. You have been added to the waitlist for \""
                         + event.getEventName() + "\" (position " + event.getWaitlistCount() + ").");
+                persistence.saveData(eventManager);
             }
             case "DUPLICATE" ->
                 ConsoleUtils.printError("You are already registered or waitlisted for this event.");
@@ -254,10 +262,14 @@ public class StudentMenuController {
         String result = eventManager.cancelRegistration(eventId, student.getUserId());
 
         switch (result) {
-            case "CANCELLED_REG" ->
+            case "CANCELLED_REG" -> {
                 ConsoleUtils.printSuccess("Your registration for event " + eventId + " has been cancelled.");
-            case "CANCELLED_WAIT" ->
+                persistence.saveData(eventManager);
+            }
+            case "CANCELLED_WAIT" -> {
                 ConsoleUtils.printSuccess("Your waitlist entry for event " + eventId + " has been removed.");
+                persistence.saveData(eventManager);
+            }
             case "NOT_REGISTERED" ->
                 ConsoleUtils.printError("You are not registered or waitlisted for event " + eventId + ".");
             case "EVENT_CANCELLED" ->
@@ -320,17 +332,66 @@ public class StudentMenuController {
         ConsoleUtils.printInfo("Total: " + registeredCount + " registered, " + waitlistedCount + " waitlisted.");
     }
 
-    // ---- Section 2.4 Stub ----
+    // ---- Section 2.4 — Search Events ----
 
     /**
-     * Searches for events by name or date.
-     * Stub — will be implemented in Section 2.4.
+     * Searches for events by name (partial/full match) or date (exact match).
+     * Displays full event details including registered count and waitlist count.
+     *
+     * @param scanner the Scanner instance for reading input
      */
-    private void searchEvents() {
+    private void searchEvents(Scanner scanner) {
         if (!student.hasPermission("SEARCH_EVENTS")) {
             ConsoleUtils.printError("Access denied: Students cannot perform this action.");
             return;
         }
-        ConsoleUtils.printInfo("Search Events — Coming soon (Section 2.4).");
+
+        ConsoleUtils.printHeader("Search Events");
+
+        if (eventManager.getActiveEventCount() == 0) {
+            ConsoleUtils.printInfo("No events are currently available to search.");
+            return;
+        }
+
+        System.out.println("Search by:");
+        System.out.println("  1. Event Name (partial or full match)");
+        System.out.println("  2. Event Date (exact match, dd/mm/yyyy)");
+        System.out.print("Your choice: ");
+
+        String searchChoice = scanner.nextLine().trim();
+        List<Event> results;
+
+        if ("1".equals(searchChoice)) {
+            System.out.print("Enter event name to search: ");
+            String query = scanner.nextLine().trim();
+            if (!InputValidator.isNonEmpty(query)) {
+                ConsoleUtils.printError("Search term cannot be empty.");
+                return;
+            }
+            results = eventManager.searchByName(query);
+        } else if ("2".equals(searchChoice)) {
+            System.out.print("Enter event date (dd/mm/yyyy): ");
+            String date = scanner.nextLine().trim();
+            if (!InputValidator.isValidDate(date)) {
+                ConsoleUtils.printError("Invalid date format. Please use dd/mm/yyyy.");
+                return;
+            }
+            results = eventManager.searchByDate(date);
+        } else {
+            ConsoleUtils.printError("Invalid choice.");
+            return;
+        }
+
+        if (results.isEmpty()) {
+            ConsoleUtils.printInfo("No events found matching your search.");
+        } else {
+            ConsoleUtils.printDivider();
+            System.out.println("  Found " + results.size() + " event(s):");
+            ConsoleUtils.printDivider();
+            for (Event event : results) {
+                System.out.println(event.toDetailedString());
+                ConsoleUtils.printDivider();
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Service class managing all event operations in the Campus Event Management System.
@@ -22,7 +23,7 @@ import java.util.Map;
  * </ul>
  *
  * @author Zascia Hugo
- * @version 0.3.0
+ * @version 0.4.0
  * @see Event
  */
 public class EventManager {
@@ -278,5 +279,55 @@ public class EventManager {
             }
         }
         return result;
+    }
+
+    // ---- Search Operations (Section 2.4) ----
+
+    /**
+     * Searches for events whose name contains the given query string.
+     * The match is case-insensitive and supports partial matches.
+     *
+     * @param query the search term (partial or full event name)
+     * @return list of matching events (may include cancelled events)
+     */
+    public List<Event> searchByName(String query) {
+        String lowerQuery = query.toLowerCase();
+        return events.values().stream()
+                .filter(e -> e.getEventName().toLowerCase().contains(lowerQuery))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Searches for events that exactly match the given date string.
+     *
+     * @param date the date to search for in dd/mm/yyyy format
+     * @return list of matching events (may include cancelled events)
+     */
+    public List<Event> searchByDate(String date) {
+        return events.values().stream()
+                .filter(e -> e.getEventDate().equals(date))
+                .collect(Collectors.toList());
+    }
+
+    // ---- Persistence Helpers (Section 2.4) ----
+
+    /**
+     * Returns the internal events map. Used by the persistence layer to
+     * serialise all events, registrations, and waitlists to file.
+     *
+     * @return unmodifiable view of the events map
+     */
+    public Map<Integer, Event> getEventsMap() {
+        return Map.copyOf(events);
+    }
+
+    /**
+     * Adds an event directly to the store. Used by the persistence layer
+     * to restore saved events on application startup.
+     *
+     * @param event the event to add (must have a unique ID)
+     */
+    public void addEvent(Event event) {
+        events.put(event.getEventId(), event);
     }
 }

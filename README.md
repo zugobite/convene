@@ -160,7 +160,8 @@ convene/
 │   ├── utils/
 │   │   ├── InputValidator.java         # Input validation helpers
 │   │   └── ConsoleUtils.java           # Console formatting helpers
-│   └── data/                           # File I/O persistence layer
+│   └── data/
+│       └── DataPersistence.java        # File-based save/load persistence
 ├── data/                               # Runtime data files
 ├── docs/                               # Developer documentation
 │   ├── 001-APPLICATION_REQUIREMENTS.md
@@ -183,7 +184,8 @@ The application uses the following class structure:
 | `Staff`                 | Concrete   | Staff user with create/update/cancel actions        |
 | `Role`                  | Enum       | STUDENT and STAFF role constants                    |
 | `Event`                 | Model      | Event with ID, schedule, capacity, and waitlist     |
-| `EventManager`          | Service    | Event store, registration, and waitlist promotion |
+| `EventManager`          | Service    | Event store, registration, search & waitlist promotion |
+| `DataPersistence`       | Data       | File-based persistence for events and registrations  |
 | `MenuController`        | Controller | Role selection and routing at startup               |
 | `StudentMenuController` | Controller | Student menu loop and action dispatch               |
 | `StaffMenuController`   | Controller | Staff menu loop and action dispatch                 |
